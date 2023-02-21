@@ -1,13 +1,27 @@
-from open_interest import LocaleDAO
+from open_interest import LocaleDAO, OnlineReader
+import expiry
+import underlying
 
-product = {"productGroupId": 13394, "productId": 70044}
-expiry_date = {"month": 2, "year": 2023}
+invalid_product = {"name": "something", "productGroupId": "7", "productId": "b"}
+invalid_expiry = {"month": "d", "year": "a", "date": "20230317"}
 
 
-def test_read():
-    parameter = {"product": product, "type": "Call", "expiry_date": expiry_date, "bus_date": "20230217"}
+def test_read_all_byexpiry_date():
+    parameter = {"product": invalid_product, "type": "muhh", "expiry_date": invalid_expiry, "bus_date": "20230217"}
+    
     local_dao = LocaleDAO()
     assert local_dao != None
 
-    results = local_dao.read(parameter)
-    assert len(list(results)) > 0
+    results = local_dao.read_all_byexpiry_date(parameter)
+    assert len(list(results))  == 0
+
+    parameter = {}
+    results = local_dao.read_all_byexpiry_date(parameter)
+    assert len(list(results))  == 0
+
+def test_online_reader():
+    online_reader = OnlineReader()
+    assert online_reader != None
+
+    parameter = {"product": invalid_product, "type": "muhh", "expiry_date": invalid_expiry, "bus_date": "20230217"}
+    online_reader.request_data(parameter) == None

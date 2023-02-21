@@ -21,7 +21,7 @@ class OnlineReader:
         url = generate_url(**parameters)
 
         response = self._http.request("GET", url)
-        # print(response.geturl())
+        print(f"Response for {response.geturl()}: {response.status}")
 
         eurex_data = response.data.decode("utf-8")
         parsed_html = BeautifulSoup(eurex_data, features="lxml")
@@ -91,6 +91,9 @@ class LocaleDAO:
                 self._collection.insert_one(open_interest_data)
         except pymongo.errors.ServerSelectionTimeoutError as e:
             print("Could not write data to locale storrage: ", e)
+        except KeyError:
+            pass
+
 
     def read_all_byexpiry_date(self, parameter: dict) -> list[dict]:
         # print(f"Using Parameter: {parameter}")
@@ -98,7 +101,9 @@ class LocaleDAO:
             return self._collection.find(generate_filter_expiry_date(parameter))
         except pymongo.errors.ServerSelectionTimeoutError as e:
             print("Could not read data from locale storrage: ", e)
-            return None
+            return {}
+        except KeyError as ke:
+            return {}
 
     def read_entry(self, parameter: dict) -> dict:
         # print(f"Using Parameter: {parameter}")
@@ -107,6 +112,9 @@ class LocaleDAO:
         except pymongo.errors.ServerSelectionTimeoutError as e:
             print("Could not read data from locale storrage: ", e)
             return None
+        except KeyError:
+            return None
+        
 
     def close(self):
         self._myclient.close
@@ -348,36 +356,44 @@ def get_most_recent_distribution(parameter: dict) -> list:
     
 
 def generate_unique_filter(parameter: dict) -> dict:
-    return {
-        "$and": [
-            {"parameter.type": parameter["type"]},
-            {"parameter.bus_date": parameter["bus_date"]},
-            {"parameter.product.productId": parameter["product"]["productId"]},
-            {
-                "parameter.product.productGroupId": parameter["product"][
-                    "productGroupId"
-                ]
-            },
-            {"parameter.expiry_date.month": parameter["expiry_date"]["month"]},
-            {"parameter.expiry_date.year": parameter["expiry_date"]["year"]},
-        ]
-    }
+    try:
+        return {
+            "$and": [
+                {"parameter.type": parameter["type"]},
+                {"parameter.bus_date": parameter["bus_date"]},
+                {"parameter.product.productId": parameter["product"]["productId"]},
+                {
+                    "parameter.product.productGroupId": parameter["product"][
+                        "productGroupId"
+                    ]
+                },
+                {"parameter.expiry_date.month": parameter["expiry_date"]["month"]},
+                {"parameter.expiry_date.year": parameter["expiry_date"]["year"]},
+            ]
+        }
+    except KeyError as ke:
+        print(f"Provided parameters are invalid: {parameter}")
+        raise KeyError(ke)
 
 
 def generate_filter_expiry_date(parameter: dict) -> dict:
-    return {
-        "$and": [
-            {"parameter.type": parameter["type"]},
-            {"parameter.product.productId": parameter["product"]["productId"]},
-            {
-                "parameter.product.productGroupId": parameter["product"][
-                    "productGroupId"
-                ]
-            },
-            {"parameter.expiry_date.month": parameter["expiry_date"]["month"]},
-            {"parameter.expiry_date.year": parameter["expiry_date"]["year"]},
-        ]
-    }
+    try:
+        return {
+            "$and": [
+                {"parameter.type": parameter["type"]},
+                {"parameter.product.productId": parameter["product"]["productId"]},
+                {
+                    "parameter.product.productGroupId": parameter["product"][
+                        "productGroupId"
+                    ]
+                },
+                {"parameter.expiry_date.month": parameter["expiry_date"]["month"]},
+                {"parameter.expiry_date.year": parameter["expiry_date"]["year"]},
+            ]
+        }
+    except KeyError as ke:
+        print(f"Provided parameters are invalid: {parameter}")
+        raise KeyError(ke)
 
 
 def generate_url(
