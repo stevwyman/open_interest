@@ -98,11 +98,6 @@ product = underlying.DAX
 generate_max_pain_history({"product": product, "expiry_date": expiry_date})
 ```
 
-### draw chart
-
-This is a sample chart, showing the distribution of the value over strike:
-
-<img src="Figure_1.png" />
 
 ### show chart
 
