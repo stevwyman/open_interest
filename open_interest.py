@@ -6,6 +6,8 @@ from tabulate import tabulate
 from datetime import datetime, timedelta
 import time
 
+DATE_FORMAT = "%Y%m%d"
+
 
 class OnlineReader:
     def __init__(self):
@@ -68,6 +70,7 @@ class LocaleDAO:
         self._collection = self._db.open_interest
 
     def write(self, open_interest_data: dict) -> None:
+        
         try:
             if (
                 len(
@@ -81,7 +84,7 @@ class LocaleDAO:
             ):
                 print(f"Entry exists already.")
             else:
-                print("Adding new entry.")
+                print(f"Adding new entry: {open_interest_data['parameter']['type']['bus_date']}")
                 self._collection.insert_one(open_interest_data)
         except pymongo.errors.ServerSelectionTimeoutError as e:
             print("Could not write data to locale storrage: ", e)
@@ -110,29 +113,41 @@ def update_data(parameter: dict) -> None:
     online_reader = OnlineReader()
     locale_dao = LocaleDAO()
 
+    expiry_date = datetime.strptime(parameter["expiry_date"]["date"], DATE_FORMAT)
     today = datetime.now()
 
-    for n in range(20):
+    for n in range(60):
         days_ago = timedelta(days = n)
-        a = today - days_ago
-        bus_date = a.strftime("%Y%m%d")
+        a = expiry_date - days_ago
+        if a >= today:
+            continue
+
+        bus_date = a.strftime(DATE_FORMAT)
         parameter["bus_date"] = bus_date
 
         parameter["type"] = "Call"
-        print(f"requesting: {parameter}")
-        online_data: dict = online_reader.request_data(parameter)
-        if not online_data["data"]:
-            continue
-        locale_dao.write(online_data)
-        time.sleep(5)
+        result = locale_dao.read_entry(parameter)
+        # if data not in local storage, request online 
+        if result is None:
+            online_data: dict = online_reader.request_data(parameter)
+            if not online_data["data"]:
+                continue
+            locale_dao.write(online_data)
+            time.sleep(5)
+        else:
+            print(f"Entry already in local storage: {parameter['type']}, {parameter['bus_date']}")
 
         parameter["type"] = "Put"
-        print(f"requesting: {parameter}")
-        online_data: dict = online_reader.request_data(parameter)
-        if not online_data["data"]:
-            continue
-        locale_dao.write(online_data)
-        time.sleep(5)
+        result = locale_dao.read_entry(parameter)
+        # if data not in local storage, request online 
+        if result is None:
+            online_data: dict = online_reader.request_data(parameter)
+            if not online_data["data"]:
+                continue
+            locale_dao.write(online_data)
+            time.sleep(5)
+        else:
+            print(f"Entry already in local storage: {parameter['type']}, {parameter['bus_date']}")
     
     locale_dao.close
 
@@ -307,6 +322,8 @@ def generate_max_pain_history(parameter: dict) -> None:
         max_pain_over_time.append([bus_date, minimum_strike, max_pain[minimum_strike]])
 
     locale_dao.close
+
+    max_pain_over_time = sorted(max_pain_over_time, key=lambda x: x[0], reverse=True)
 
     header = ["Date", "Strike", "Value"]
     print(tabulate(max_pain_over_time, headers=header, tablefmt='fancy_grid'))

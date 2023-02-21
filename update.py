@@ -1,8 +1,9 @@
 from open_interest import update_data
 import underlying
+import expiry
 
 
-expiry_date = {"month": 3, "year": 2023}
-product = underlying.ALLIANZ
+expiry = expiry.February_2023
+product = underlying.DAX
 
-update_data({"product": product, "expiry_date": expiry_date})
+update_data({"product": product, "expiry_date": expiry})

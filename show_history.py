@@ -1,8 +1,9 @@
 from open_interest import generate_max_pain_history
 import underlying
+import expiry
 
 
-expiry_date = {"month": 3, "year": 2023}
+expiry_date = expiry.February_2023
 product = underlying.DAX
 
 generate_max_pain_history({"product": product, "expiry_date": expiry_date})
