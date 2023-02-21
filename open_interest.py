@@ -5,6 +5,8 @@ from lxml import etree
 from tabulate import tabulate
 from datetime import datetime, timedelta
 import time
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 DATE_FORMAT = "%Y%m%d"
 
@@ -70,7 +72,6 @@ class LocaleDAO:
         self._collection = self._db.open_interest
 
     def write(self, open_interest_data: dict) -> None:
-        
         try:
             if (
                 len(
@@ -84,7 +85,9 @@ class LocaleDAO:
             ):
                 print(f"Entry exists already.")
             else:
-                print(f"Adding new entry: {open_interest_data['parameter']['type']['bus_date']}")
+                print(
+                    f"Adding new entry: {open_interest_data['parameter']['type']['bus_date']}"
+                )
                 self._collection.insert_one(open_interest_data)
         except pymongo.errors.ServerSelectionTimeoutError as e:
             print("Could not write data to locale storrage: ", e)
@@ -96,8 +99,8 @@ class LocaleDAO:
         except pymongo.errors.ServerSelectionTimeoutError as e:
             print("Could not read data from locale storrage: ", e)
             return None
-    
-    def read_entry(self, parameter:dict) -> dict:
+
+    def read_entry(self, parameter: dict) -> dict:
         # print(f"Using Parameter: {parameter}")
         try:
             return self._collection.find_one(generate_unique_filter(parameter))
@@ -117,7 +120,7 @@ def update_data(parameter: dict) -> None:
     today = datetime.now()
 
     for n in range(60):
-        days_ago = timedelta(days = n)
+        days_ago = timedelta(days=n)
         a = expiry_date - days_ago
         if a >= today:
             continue
@@ -127,7 +130,7 @@ def update_data(parameter: dict) -> None:
 
         parameter["type"] = "Call"
         result = locale_dao.read_entry(parameter)
-        # if data not in local storage, request online 
+        # if data not in local storage, request online
         if result is None:
             online_data: dict = online_reader.request_data(parameter)
             if not online_data["data"]:
@@ -135,11 +138,13 @@ def update_data(parameter: dict) -> None:
             locale_dao.write(online_data)
             time.sleep(5)
         else:
-            print(f"Entry already in local storage: {parameter['type']}, {parameter['bus_date']}")
+            print(
+                f"Entry already in local storage: {parameter['type']}, {parameter['bus_date']}"
+            )
 
         parameter["type"] = "Put"
         result = locale_dao.read_entry(parameter)
-        # if data not in local storage, request online 
+        # if data not in local storage, request online
         if result is None:
             online_data: dict = online_reader.request_data(parameter)
             if not online_data["data"]:
@@ -147,117 +152,52 @@ def update_data(parameter: dict) -> None:
             locale_dao.write(online_data)
             time.sleep(5)
         else:
-            print(f"Entry already in local storage: {parameter['type']}, {parameter['bus_date']}")
-    
+            print(
+                f"Entry already in local storage: {parameter['type']}, {parameter['bus_date']}"
+            )
+
     locale_dao.close
 
 
 def generate_max_pain_chart(parameter: dict) -> None:
-    
-    max_pain_over_time = list()
+    max_pain_over_time = sorted(get_max_pain_history(parameter), key=lambda x: x[0])
 
-    locale_dao = LocaleDAO()
+    values = [max_pain[1] for max_pain in max_pain_over_time]
+    names = [max_pain[0] for max_pain in max_pain_over_time]
 
-    parameter["type"] = "Call"
-    # print(f"requesting: {parameter}")
-    calls = list(locale_dao.read_all_byexpiry_date(parameter))
-    # print(f"{len(calls)} entries found")
-
-    parameter["type"] = "Put"
-    # print(f"requesting: {parameter}")
-    puts = list(locale_dao.read_all_byexpiry_date(parameter))
-    # print(f"{len(puts)} entries found")
-
-    # using a set as we want unique strike values
-    strikes = set()
-
-    # empty list to create a list of available business dates
-    bus_dates = list()
-
-    # add all the strikes form the list of puts
-    for put in puts:
-        for key in put["data"].keys():
-            strikes.add(int(key))
-
-    # add all the strikes form the list of call     
-    for call in calls:
-        # get a list of available business dates
-        bus_dates.append(call["parameter"]["bus_date"])
-        for key in call["data"].keys():
-            strikes.add(int(key))
-
-    # for each business day, create the max_pain entry
-    for bus_date in bus_dates:
-
-        # max pain is a dict holding strike - value data, where value is a sum of put and call
-        max_pain = {}
-
-        parameter["type"] = "Call"
-        parameter["bus_date"] = bus_date
-        call = locale_dao.read_entry(parameter)
-
-        parameter["type"] = "Put"
-        parameter["bus_date"] = bus_date
-        put = locale_dao.read_entry(parameter)
-
-        for strike in strikes:
-
-            data = call["data"]
-            wert = 0
-            for key, value in data.items():
-                if value[0] < strike:
-                    delta = strike - value[0]
-                    wert += delta * value[1] 
-
-            if strike not in max_pain:
-                max_pain[strike] = 0
-            max_pain[strike] += wert
-
-            data = put["data"]
-            wert = 0
-            for key, value in data.items():
-                if value[0] > strike:
-                    delta =  value[0] - strike
-                    wert += delta * value[1]
-
-            if strike not in max_pain:
-                max_pain[strike] = 0
-            max_pain[strike] += wert           
-
-        max_pain = dict(sorted(max_pain.items(), key=lambda item: item[1]))
-        minimum_strike = list(max_pain)[0]
-        # print(f"{bus_date} {minimum_strike}: {max_pain[minimum_strike]} ")
-
-        max_pain_over_time.append([bus_date, minimum_strike, max_pain[minimum_strike]])
-
-        # max_pain = dict(sorted(max_pain.items(), key=lambda item: item[0]))
-        # names = list(max_pain.keys())
-        # values = list(max_pain.values())
-
-        # plt.bar(range(len(max_pain)), values, tick_label=names)
-        # plt.show()
-
-    locale_dao.close
-
-    header = ["Date", "Strike", "Value"]
-    print(tabulate(max_pain_over_time, headers=header, tablefmt='fancy_grid'))
+    plt.title(
+        f'{parameter["product"]["name"]} {parameter["expiry_date"]["month"]}.{parameter["expiry_date"]["year"]}'
+    )
+    plt.ylabel("Strike")
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%d.%m.%Y"))
+    plt.step(names, values)
+    plt.gcf().autofmt_xdate()
+    plt.show()
 
 
 def generate_max_pain_history(parameter: dict) -> None:
-    
+    max_pain_over_time = sorted(
+        get_max_pain_history(parameter), key=lambda x: x[0], reverse=True
+    )
+
+    header = ["Date", "Strike", "Value"]
+    print(tabulate(max_pain_over_time, headers=header, tablefmt="fancy_grid"))
+
+
+def get_max_pain_history(parameter: dict) -> list:
+    """
+    generates a list of max pain entries
+    """
+
     max_pain_over_time = list()
 
     locale_dao = LocaleDAO()
 
     parameter["type"] = "Call"
-    # print(f"requesting: {parameter}")
     calls = list(locale_dao.read_all_byexpiry_date(parameter))
-    # print(f"{len(calls)} entries found")
 
     parameter["type"] = "Put"
-    # print(f"requesting: {parameter}")
     puts = list(locale_dao.read_all_byexpiry_date(parameter))
-    # print(f"{len(puts)} entries found")
 
     # using a set as we want unique strike values
     strikes = set()
@@ -270,7 +210,7 @@ def generate_max_pain_history(parameter: dict) -> None:
         for key in put["data"].keys():
             strikes.add(int(key))
 
-    # add all the strikes form the list of call     
+    # add all the strikes form the list of call
     for call in calls:
         # get a list of available business dates
         bus_dates.append(call["parameter"]["bus_date"])
@@ -279,7 +219,6 @@ def generate_max_pain_history(parameter: dict) -> None:
 
     # for each business day, create the max_pain entry
     for bus_date in bus_dates:
-
         # max pain is a dict holding strike - value data, where value is a sum of put and call
         max_pain = {}
 
@@ -292,13 +231,12 @@ def generate_max_pain_history(parameter: dict) -> None:
         put = locale_dao.read_entry(parameter)
 
         for strike in strikes:
-
             data = call["data"]
             wert = 0
             for key, value in data.items():
                 if value[0] < strike:
                     delta = strike - value[0]
-                    wert += delta * value[1] 
+                    wert += delta * value[1]
 
             if strike not in max_pain:
                 max_pain[strike] = 0
@@ -308,25 +246,27 @@ def generate_max_pain_history(parameter: dict) -> None:
             wert = 0
             for key, value in data.items():
                 if value[0] > strike:
-                    delta =  value[0] - strike
+                    delta = value[0] - strike
                     wert += delta * value[1]
 
             if strike not in max_pain:
                 max_pain[strike] = 0
-            max_pain[strike] += wert           
+            max_pain[strike] += wert
 
         max_pain = dict(sorted(max_pain.items(), key=lambda item: item[1]))
         minimum_strike = list(max_pain)[0]
-        # print(f"{bus_date} {minimum_strike}: {max_pain[minimum_strike]} ")
 
-        max_pain_over_time.append([bus_date, minimum_strike, max_pain[minimum_strike]])
+        max_pain_over_time.append(
+            [
+                datetime.strptime(bus_date, DATE_FORMAT),
+                minimum_strike,
+                max_pain[minimum_strike],
+            ]
+        )
 
     locale_dao.close
 
-    max_pain_over_time = sorted(max_pain_over_time, key=lambda x: x[0], reverse=True)
-
-    header = ["Date", "Strike", "Value"]
-    print(tabulate(max_pain_over_time, headers=header, tablefmt='fancy_grid'))
+    return max_pain_over_time
 
 
 def generate_unique_filter(parameter: dict) -> dict:

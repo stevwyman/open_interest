@@ -3,7 +3,7 @@ import underlying
 import expiry
 
 
-expiry = expiry.February_2023
+expiry_date = expiry.February_2023
 product = underlying.DAX
 
-update_data({"product": product, "expiry_date": expiry})
+update_data({"product": product, "expiry_date": expiry_date})
