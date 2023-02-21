@@ -17,14 +17,24 @@ host = www.eurex.com
 url = ex-de/marktdaten/statistik/online-marktstatistiken/100!onlineStats
 ```
 
-There are a lot of underlyings which can be storred in [underlying.py](/underlying.py).
+There are a lot of underlyings which can be storred in [underlying.py](underlying.py).
 
 ```python
-COVESTRO = {"productId": 47410, "productGroupId": 9772}
-ADIDAS = {"productId": 47634, "productGroupId": 9772}
-ALLIANZ = {"productId":47910, "productGroupId": 9772}
+COVESTRO = {"name": "Covestro", "productId": 47410, "productGroupId": 9772}
+ADIDAS = {"name": "Addidas", "productId": 47634, "productGroupId": 9772}
+ALLIANZ = {"name": "Allianz", "productId":47910, "productGroupId": 9772}
 
-DAX = {"productId": 70044, "productGroupId": 13394}
+DAX = {"name": "DAX perf.", "productId": 70044, "productGroupId": 13394}
+```
+
+For each expiry date, create an entry in the [expiry.py](expiry.py)
+
+```python
+March_2023 = {"month": 3, "year": 2023, "date": "20230317"}
+February_2023 = {"month": 2, "year": 2023, "date": "20230217"}
+January_2023 = {"month": 1, "year": 2023, "date": "20230120"}
+December_2022 = {"month": 12, "year": 2022, "date": "20221216"}
+November_2022 = {"month": 11, "year": 2022, "date": "20231118"}
 ```
 
 ## Requirements
@@ -81,8 +91,42 @@ Here is a sample output when listing the history of an underlying
 ╘══════════╧══════════╧═══════════╛
 ```
 
+```python
+expiry_date = expiry.March_2023
+product = underlying.DAX
+
+generate_max_pain_history({"product": product, "expiry_date": expiry_date})
+```
+
 ### draw chart
 
 This is a sample chart, showing the distribution of the value over strike:
 
 <img src="Figure_1.png" />
+
+### show chart
+
+shows a historic overview about how the max pain level is doing over time
+
+<img src="Figure_2.png" />
+
+```python
+expiry_date = expiry.March_2023
+product = underlying.DAX
+
+generate_max_pain_chart({"product": product, "expiry_date": expiry_date})
+```
+
+### show distribution
+
+takes the most recent bus date and generates an distribution chart
+
+<img src="Figure_3.png" />
+
+
+```python
+expiry_date = expiry.March_2023
+product = underlying.DAX
+
+get_most_recent_distribution({"product": product, "expiry_date": expiry_date})
+```

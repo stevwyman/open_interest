@@ -1,3 +1,6 @@
+"""
+The different expiry dates encapsulated
+"""
 
 March_2023 = {"month": 3, "year": 2023, "date": "20230317"}
 February_2023 = {"month": 2, "year": 2023, "date": "20230217"}
