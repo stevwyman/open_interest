@@ -21,7 +21,7 @@ class OnlineReader:
         url = generate_url(**parameters)
 
         response = self._http.request("GET", url)
-        print(f"Response for {response.geturl()}: {response.status}")
+        print(f"Response for {response.geturl()}: {response.status} ... ")
 
         eurex_data = response.data.decode("utf-8")
         parsed_html = BeautifulSoup(eurex_data, features="lxml")
@@ -61,7 +61,12 @@ class OnlineReader:
                 data_dict[strike] = (strike_int, open_interest, open_interest_adj)
             except ValueError:
                 pass
-
+        
+        entries = len(data_dict)
+        if entries == 0:
+            print("... no data available")
+        else:
+            print(f"... received {entries} entries")
         return {"parameter": parameters, "data": data_dict}
 
 
@@ -86,7 +91,7 @@ class LocaleDAO:
                 print(f"Entry exists already.")
             else:
                 print(
-                    f"Adding new entry: {open_interest_data['parameter']['type']['bus_date']}"
+                    f"Adding new entry for {open_interest_data['parameter']['product']['name']} {open_interest_data['parameter']['type']} {open_interest_data['parameter']['bus_date']}"
                 )
                 self._collection.insert_one(open_interest_data)
         except pymongo.errors.ServerSelectionTimeoutError as e:
@@ -353,6 +358,35 @@ def get_most_recent_distribution(parameter: dict) -> list:
     plt.gcf().autofmt_xdate()
     plt.show()
 
+
+def generate_most_distribution(parameter: dict) -> None:
+    """
+    generate a chart showing for the specified business date the distribution of calls and puts
+    """
+    local_dao = LocaleDAO()
+    parameter["type"] = "Call"
+    calls = local_dao.read_entry(parameter)
+    if not calls:
+        raise ValueError("No data found for the provided parameter")
+
+    call_labels = list()
+    call_values = list()
+    for call in calls["data"].values():
+        call_labels.append(call[0])
+        call_values.append(call[2])
+
+    parameter["type"] = "Put"
+    puts = local_dao.read_entry(parameter)
+
+    put_labels = list()
+    put_values = list()
+    for put in puts["data"].values():
+        put_labels.append(put[0])
+        put_values.append(put[2])
+
+    plt.barh(call_labels, call_values, height=20)
+    plt.barh(put_labels, put_values, height=20)
+    plt.show()
     
 
 def generate_unique_filter(parameter: dict) -> dict:

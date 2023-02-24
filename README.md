@@ -49,13 +49,24 @@ see also [requirements.txt](/requirements.txt):
 
 Using the program at this point in time requires the manual modification of the "parameter". Hence, you need to specify an underlying as well as an expiry date.
 
-Then there are thre main scripts prepared for
+```sh
+usage: oi.py [-h] [-t T] [-u U] [-e E] [-b B]
 
-* update -> updates the data
-* show_history -> gives a table with the history over the last trading days max pain points
-* draw chart -> gives a chart visualizing the most recent distribution of value to strike
+Manage open interest data from www.eurex.de
 
-### show history
+optional arguments:
+  -h, --help  show this help message and exit
+  -t T        the task to perform, i.e. update
+  -u U        the underlying, i.e. DAX
+  -e E        the expiry, i.e. March_2023
+  -b B        the date for which the date is requested, i.e. 20230222 (Feb 22nd, 2023)
+```
+
+### -t update
+
+updates the data for the specified underlaying and the specified expiry date
+
+### -t list
 
 Here is a sample output when listing the history of an underlying
 
@@ -91,37 +102,14 @@ Here is a sample output when listing the history of an underlying
 ╘══════════╧══════════╧═══════════╛
 ```
 
-```python
-expiry_date = expiry.March_2023
-product = underlying.DAX
-
-generate_max_pain_history({"product": product, "expiry_date": expiry_date})
-```
-
-
-### show chart
+### -t chart
 
 shows a historic overview about how the max pain level is doing over time
 
 <img src="Figure_2.png" />
 
-```python
-expiry_date = expiry.March_2023
-product = underlying.DAX
-
-generate_max_pain_chart({"product": product, "expiry_date": expiry_date})
-```
-
-### show distribution
+### -t distribution
 
 takes the most recent bus date and generates an distribution chart
 
 <img src="Figure_3.png" />
-
-
-```python
-expiry_date = expiry.March_2023
-product = underlying.DAX
-
-get_most_recent_distribution({"product": product, "expiry_date": expiry_date})
-```
