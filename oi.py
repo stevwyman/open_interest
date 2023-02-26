@@ -35,12 +35,12 @@ def main():
     if args.u in underlying.UNDERLYINGS:
         product = underlying.UNDERLYINGS[args.u]
     else:
-        exit("Invalid underlying date provided")
+        exit("Invalid underlying name provided, use i.e. DAX or ADIDAS")
 
     if args.e in expiry.EXPIRIES:
         expiry_date = expiry.EXPIRIES[args.e]
     else:
-        exit("Invalid expiry date provided")
+        exit("Invalid expiry date provided, use i.e. March_2023")
 
     if args.t == "update":
         print(f"Updating {product['name']} for {expiry_date['month']} {expiry_date['year']} ...")

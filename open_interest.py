@@ -135,7 +135,13 @@ def update_data(parameter: dict) -> None:
     for n in range(60):
         days_ago = timedelta(days=n)
         a = expiry_date - days_ago
+
+        # if date is in the future or today
         if a >= today:
+            continue
+
+        # if the requested date is not a weekday (Mon - Fri)
+        if a.isoweekday() not in range(1, 6):
             continue
 
         bus_date = a.strftime(DATE_FORMAT)
