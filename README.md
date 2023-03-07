@@ -7,7 +7,7 @@ Open interest is the number of contracts or commitments outstanding in futures a
 For a deeper answer ho [here](https://www.investopedia.com/terms/o/openinterest.asp)
 Futures in Germany are traded at the [EUREX](https://www.eurex.com/ex-de/)
 
-In theory we can look at the open interest for a particular index or asset and see for which level, how many contracts have been sold and are still open. Assuming the writer of the contract has an interest to 'move' the underlying in a direction so that the contract is becomming worthless or at least the delta is as low as possible, then we can also assume, that the sum of writers has an interest to move the underlying to the level, where they loose as least as possible. That level is also called **max pain**.
+In theory we can look at the open interest for a particular index or asset and see for which level, how many contracts have been sold and are still open. Assuming the writer of the contract has an interest to 'move' the underlying in a direction so that the contract is becoming worthless or at least the delta is as low as possible, then we can also assume, that the sum of writers has an interest to move the underlying to the level, where they loose as least as possible. That level is also called **max pain**.
 
 To access the data:
 
@@ -17,7 +17,7 @@ host = www.eurex.com
 url = ex-de/marktdaten/statistik/online-marktstatistiken/100!onlineStats
 ```
 
-There are a lot of underlyings which can be storred in [underlying.py](underlying.py).
+There are a lot of underlying which can be stored in [underlying.py](underlying.py).
 
 ```python
 COVESTRO = {"name": "Covestro", "productId": 47410, "productGroupId": 9772}
@@ -64,7 +64,7 @@ optional arguments:
 
 ### -t update
 
-updates the data for the specified underlaying and the specified expiry date
+updates the data for the specified underlying and the specified expiry date
 
 ### -t list
 

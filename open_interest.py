@@ -5,6 +5,7 @@ from lxml import etree
 from tabulate import tabulate
 from datetime import datetime, timedelta
 import time
+import calendar
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
@@ -440,3 +441,24 @@ def generate_url(
     product: dict[str, int], type: str, expiry_date: dict[str, int], bus_date: str
 ):
     return f"https://www.eurex.com/ex-en/data/statistics/market-statistics-online/100!onlineStats?productGroupId={product['productGroupId']}&productId={product['productId']}&viewType=3&cp={type}&month={expiry_date['month']}&year={expiry_date['year']}&busDate={bus_date}"
+
+
+def next_expiry_date() -> str:
+    """
+    using the current date, we want to know the next expiry date
+    """
+    now = datetime.today()
+    current_year = now.year
+    current_month = now.month
+
+    c = calendar.Calendar(firstweekday=calendar.SATURDAY)
+    expiry_date = c.monthdatescalendar(current_year, current_month)[2][6]
+
+    ## TODO handle the case when we are after the expiry, still in the month and when we are in dec
+
+    expiry_month = expiry_date.month
+    expiry_year = expiry_date.year
+    expiry_date = datetime.strftime(expiry_date, DATE_FORMAT)
+    expiry_date_entry = {"month": expiry_month, "year": expiry_year, "date": expiry_date}
+
+    return expiry_date_entry

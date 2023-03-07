@@ -1,6 +1,8 @@
-from open_interest import LocaleDAO, OnlineReader
+from open_interest import LocaleDAO, OnlineReader, next_expiry_date
 import expiry
 import underlying
+
+import datetime as datetime
 
 invalid_product = {"name": "something", "productGroupId": "7", "productId": "b"}
 invalid_expiry = {"month": "d", "year": "a", "date": "20230317"}
@@ -25,3 +27,7 @@ def test_online_reader():
 
     parameter = {"product": invalid_product, "type": "muhh", "expiry_date": invalid_expiry, "bus_date": "20230217"}
     online_reader.request_data(parameter) == None
+
+def test_next_expiry_date():
+    result = next_expiry_date()
+    assert result == {"month": 3, "year": 2023, "date": "20230317"}

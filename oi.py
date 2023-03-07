@@ -1,4 +1,4 @@
-from open_interest import update_data, generate_most_distribution, generate_max_pain_chart, generate_max_pain_history, get_most_recent_distribution
+from open_interest import update_data, generate_most_distribution, generate_max_pain_chart, generate_max_pain_history, get_most_recent_distribution, next_expiry_date
 import underlying
 import expiry
 import argparse
@@ -21,8 +21,7 @@ def main():
     parser.add_argument(
         "-e",
         type=str,
-        default="March_2023",
-        help="the expiry, i.e. March_2023",
+        help="the expiry, i.e. March_2023 from the list expiry.py, or leave empty, then the next valid expiry date is chosen by default",
     )
     parser.add_argument(
         "-b",
@@ -39,8 +38,9 @@ def main():
 
     if args.e in expiry.EXPIRIES:
         expiry_date = expiry.EXPIRIES[args.e]
-    else:
-        exit("Invalid expiry date provided, use i.e. March_2023")
+    else: 
+        expiry_date = next_expiry_date()
+        print(f"Using the following expiry date: {expiry_date}")
 
     if args.t == "update":
         print(f"Updating {product['name']} for {expiry_date['month']} {expiry_date['year']} ...")
