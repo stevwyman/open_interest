@@ -180,13 +180,13 @@ def update_data(parameter: dict) -> None:
 
 
 def generate_max_pain_chart(parameter: dict) -> None:
-    max_pain_over_time = sorted(get_max_pain_history(parameter), key=lambda x: x[0])
+    max_pain_over_time = sorted(get_max_pain_history(parameter), key=lambda x: x[0], reverse=True)
 
     values = [max_pain[1] for max_pain in max_pain_over_time]
     names = [max_pain[0] for max_pain in max_pain_over_time]
 
     plt.title(
-        f'{parameter["product"]["name"]} {parameter["expiry_date"]["month"]}.{parameter["expiry_date"]["year"]}'
+        f'{parameter["product"]["name"]} {parameter["expiry_date"]["month"]}.{parameter["expiry_date"]["year"]} {max_pain_over_time[0][1]}'
     )
     plt.ylabel("Strike")
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%d.%m.%Y"))
@@ -290,6 +290,16 @@ def get_max_pain_history(parameter: dict) -> list:
 
 
 def get_most_recent_distribution(parameter: dict) -> list:
+    
+    max_pain_over_time = sorted(
+        get_max_pain_history(parameter), key=lambda x: x[0], reverse=True
+    )
+
+    current_max_pain = max_pain_over_time[0]
+    min_level = current_max_pain[1] * 0.925
+    max_level = current_max_pain[1] * 1.075
+
+    
     locale_dao = LocaleDAO()
 
     parameter["type"] = "Call"
@@ -356,12 +366,18 @@ def get_most_recent_distribution(parameter: dict) -> list:
 
     max_pain = dict(sorted(max_pain.items(), key=lambda item: item[0]))
 
+    max_pain_filtered = dict()
+    print(f"filtering for {min_level} and {max_level}")
+    for mp in max_pain:
+        if mp < max_level and mp > min_level:
+            max_pain_filtered[mp] = max_pain[mp]
+
     plt.title(
-        f'{parameter["product"]["name"]} {parameter["expiry_date"]["month"]}.{parameter["expiry_date"]["year"]}'
+        f'{parameter["product"]["name"]} {parameter["expiry_date"]["month"]}.{parameter["expiry_date"]["year"]} {max_pain_over_time[0][1]}'
     )
     plt.ylabel("Value")
     #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%d.%m.%Y"))
-    plt.step(max_pain.keys(), max_pain.values())
+    plt.step(max_pain_filtered.keys(), max_pain_filtered.values())
     plt.gcf().autofmt_xdate()
     plt.show()
 

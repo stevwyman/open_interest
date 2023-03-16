@@ -10,13 +10,13 @@ def main():
         "-t",
         type=str,
         default="update",
-        help="the task to perform, i.e. update"
+        help="the task to perform, default update, others: list, chart, distribution, distribution_by_date"
     )
     parser.add_argument(
         "-u",
         type=str,
         default="DAX",
-        help="the underlying, i.e. DAX",
+        help="the underlying, default DAX, others ES50, see underlying.py",
     )
     parser.add_argument(
         "-e",
@@ -63,6 +63,8 @@ def main():
                 exit(ve)
         else:
             exit("No business date provided, use the -b option")
+    else:
+        exit("Invalid task requested")
 
 if __name__ == "__main__":
     main()
