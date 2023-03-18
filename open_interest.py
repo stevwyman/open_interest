@@ -3,7 +3,7 @@ import pymongo
 from bs4 import BeautifulSoup
 from lxml import etree
 from tabulate import tabulate
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import time
 import calendar
 import matplotlib.pyplot as plt
@@ -62,7 +62,7 @@ class OnlineReader:
                 data_dict[strike] = (strike_int, open_interest, open_interest_adj)
             except ValueError:
                 pass
-        
+
         entries = len(data_dict)
         if entries == 0:
             print("... no data available")
@@ -100,7 +100,6 @@ class LocaleDAO:
         except KeyError:
             pass
 
-
     def read_all_byexpiry_date(self, parameter: dict) -> list[dict]:
         # print(f"Using Parameter: {parameter}")
         try:
@@ -120,7 +119,6 @@ class LocaleDAO:
             return None
         except KeyError:
             return None
-        
 
     def close(self):
         self._myclient.close
@@ -180,7 +178,9 @@ def update_data(parameter: dict) -> None:
 
 
 def generate_max_pain_chart(parameter: dict) -> None:
-    max_pain_over_time = sorted(get_max_pain_history(parameter), key=lambda x: x[0], reverse=True)
+    max_pain_over_time = sorted(
+        get_max_pain_history(parameter), key=lambda x: x[0], reverse=True
+    )
 
     values = [max_pain[1] for max_pain in max_pain_over_time]
     names = [max_pain[0] for max_pain in max_pain_over_time]
@@ -290,7 +290,6 @@ def get_max_pain_history(parameter: dict) -> list:
 
 
 def get_most_recent_distribution(parameter: dict) -> list:
-    
     max_pain_over_time = sorted(
         get_max_pain_history(parameter), key=lambda x: x[0], reverse=True
     )
@@ -299,7 +298,6 @@ def get_most_recent_distribution(parameter: dict) -> list:
     min_level = current_max_pain[1] * 0.925
     max_level = current_max_pain[1] * 1.075
 
-    
     locale_dao = LocaleDAO()
 
     parameter["type"] = "Call"
@@ -376,7 +374,7 @@ def get_most_recent_distribution(parameter: dict) -> list:
         f'{parameter["product"]["name"]} {parameter["expiry_date"]["month"]}.{parameter["expiry_date"]["year"]} {max_pain_over_time[0][1]}'
     )
     plt.ylabel("Value")
-    #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%d.%m.%Y"))
+    # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%d.%m.%Y"))
     plt.step(max_pain_filtered.keys(), max_pain_filtered.values())
     plt.gcf().autofmt_xdate()
     plt.show()
@@ -410,7 +408,7 @@ def generate_most_distribution(parameter: dict) -> None:
     plt.barh(call_labels, call_values, height=20)
     plt.barh(put_labels, put_values, height=20)
     plt.show()
-    
+
 
 def generate_unique_filter(parameter: dict) -> dict:
     try:
@@ -463,18 +461,29 @@ def next_expiry_date() -> str:
     """
     using the current date, we want to know the next expiry date
     """
-    now = datetime.today()
+    now = date.today()
     current_year = now.year
     current_month = now.month
 
     c = calendar.Calendar(firstweekday=calendar.SATURDAY)
     expiry_date = c.monthdatescalendar(current_year, current_month)[2][6]
 
-    ## TODO handle the case when we are after the expiry, still in the month and when we are in dec
+    if now > expiry_date:
+        print(f" we are already past expiry, using next month")
+        current_month += 1
+        if current_month == 12:
+            current_year += 1
+            current_month = 1
+        print(f"using month: {current_month} and year: {current_year}")
+        expiry_date = c.monthdatescalendar(current_year, current_month)[2][6]
 
     expiry_month = expiry_date.month
     expiry_year = expiry_date.year
     expiry_date = datetime.strftime(expiry_date, DATE_FORMAT)
-    expiry_date_entry = {"month": expiry_month, "year": expiry_year, "date": expiry_date}
+    expiry_date_entry = {
+        "month": expiry_month,
+        "year": expiry_year,
+        "date": expiry_date,
+    }
 
     return expiry_date_entry

@@ -30,4 +30,4 @@ def test_online_reader():
 
 def test_next_expiry_date():
     result = next_expiry_date()
-    assert result == {"month": 3, "year": 2023, "date": "20230317"}
+    assert result == {"month": 4, "year": 2023, "date": "20230421"}
