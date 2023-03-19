@@ -27,7 +27,10 @@ class OnlineReader:
 
         eurex_data = response.data.decode("utf-8")
         parsed_html = BeautifulSoup(eurex_data, features="lxml")
-        data_table = parsed_html.body.find("table", attrs={"class": "dataTable"})
+        if parsed_html.body is None:
+            raise ValueError("no body found in server answer")
+        else:
+            data_table = parsed_html.body.find("table", attrs={"class": "dataTable"})
 
         table = etree.HTML(str(data_table))
 
@@ -99,29 +102,29 @@ class LocaleDAO:
                 )
                 self._collection.insert_one(open_interest_data)
         except pymongo.errors.ServerSelectionTimeoutError as e:
-            print("Could not write data to locale storrage: ", e)
+            print("Could not write data to locale storage: ", e)
         except KeyError:
             pass
 
     def read_all_byexpiry_date(self, parameter: dict) -> list[dict]:
         # print(f"Using Parameter: {parameter}")
         try:
-            return self._collection.find(generate_filter_expiry_date(parameter))
+            return list(self._collection.find(generate_filter_expiry_date(parameter)))
         except pymongo.errors.ServerSelectionTimeoutError as e:
-            print("Could not read data from locale storrage: ", e)
-            return {}
+            print("Could not read data from locale storage: ", e)
+            return list()
         except KeyError as ke:
-            return {}
+            return list()
 
     def read_entry(self, parameter: dict) -> dict:
         # print(f"Using Parameter: {parameter}")
         try:
             return self._collection.find_one(generate_unique_filter(parameter))
         except pymongo.errors.ServerSelectionTimeoutError as e:
-            print("Could not read data from locale storrage: ", e)
-            return None
+            print("Could not read data from locale storage: ", e)
+            return {}
         except KeyError:
-            return None
+            return {}
 
     def close(self):
         self._myclient.close
@@ -167,7 +170,7 @@ def update_data(parameter: dict) -> None:
         result = locale_dao.read_entry(parameter)
         # if data not in local storage, request online
         if result is None:
-            online_data: dict = online_reader.request_data(parameter)
+            online_data = online_reader.request_data(parameter)
             if not online_data["data"]:
                 continue
             locale_dao.write(online_data)
@@ -292,7 +295,7 @@ def get_max_pain_history(parameter: dict) -> list:
     return max_pain_over_time
 
 
-def get_most_recent_distribution(parameter: dict) -> list:
+def get_most_recent_distribution(parameter: dict) -> None:
     max_pain_over_time = sorted(
         get_max_pain_history(parameter), key=lambda x: x[0], reverse=True
     )
@@ -460,7 +463,7 @@ def generate_url(
     return f"https://www.eurex.com/ex-en/data/statistics/market-statistics-online/100!onlineStats?productGroupId={product['productGroupId']}&productId={product['productId']}&viewType=3&cp={type}&month={expiry_date['month']}&year={expiry_date['year']}&busDate={bus_date}"
 
 
-def next_expiry_date() -> str:
+def next_expiry_date() -> dict:
     """
     using the current date, we want to know the next expiry date
     """
@@ -482,11 +485,11 @@ def next_expiry_date() -> str:
 
     expiry_month = expiry_date.month
     expiry_year = expiry_date.year
-    expiry_date = datetime.strftime(expiry_date, DATE_FORMAT)
+    expiry_day = datetime.strftime(expiry_date, DATE_FORMAT)
     expiry_date_entry = {
         "month": expiry_month,
         "year": expiry_year,
-        "date": expiry_date,
+        "date": expiry_day,
     }
 
     return expiry_date_entry
