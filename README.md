@@ -106,10 +106,10 @@ Here is a sample output when listing the history of an underlying
 
 shows a historic overview about how the max pain level is doing over time
 
-<img src="Figure_2.png" />
+<img src="img/Figure_2.png" />
 
 ### -t distribution
 
 takes the most recent bus date and generates an distribution chart
 
-<img src="Figure_3.png" />
+<img src="img/Figure_3.png" />

@@ -1,5 +1,6 @@
 import urllib3
 import pymongo
+import configparser
 from bs4 import BeautifulSoup
 from lxml import etree
 from tabulate import tabulate
@@ -73,9 +74,11 @@ class OnlineReader:
 
 class LocaleDAO:
     def __init__(self):
-        self._myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-        self._db = self._myclient.python_test
-        self._collection = self._db.open_interest
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+        self._myclient = pymongo.MongoClient(config.get("DB","url"))
+        self._db = self._myclient[config.get("DB","db")]
+        self._collection = self._db[config.get("DB","collection")]
 
     def write(self, open_interest_data: dict) -> None:
         try:
