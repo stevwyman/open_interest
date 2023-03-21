@@ -14,11 +14,11 @@ def test_read_all_byexpiry_date():
     local_dao = LocaleDAO()
     assert local_dao != None
 
-    results = local_dao.read_all_byexpiry_date(parameter)
+    results = local_dao.read_all_by_expiry_date(parameter)
     assert len(list(results))  == 0
 
     parameter = {}
-    results = local_dao.read_all_byexpiry_date(parameter)
+    results = local_dao.read_all_by_expiry_date(parameter)
     assert len(list(results))  == 0
 
 def test_online_reader():

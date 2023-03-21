@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from lxml import etree
 from tabulate import tabulate
 from datetime import date, datetime, timedelta
+from sys import exit
 import time
 import calendar
 import matplotlib.pyplot as plt
@@ -79,8 +80,13 @@ class LocaleDAO:
     def __init__(self):
         config = configparser.ConfigParser()
         config.read("config.ini")
-        self._myclient = pymongo.MongoClient(config.get("DB","url"))
-        self._db = self._myclient[config.get("DB","db")]
+        self._client = pymongo.MongoClient(config.get("DB","url"))
+        try:
+            self._client.server_info()
+        except pymongo.errors.ServerSelectionTimeoutError:
+            exit("Mongo instance not reachable.")
+
+        self._db = self._client[config.get("DB","db")]
         self._collection = self._db[config.get("DB","collection")]
 
     def write(self, open_interest_data: dict) -> None:
@@ -106,7 +112,7 @@ class LocaleDAO:
         except KeyError:
             pass
 
-    def read_all_byexpiry_date(self, parameter: dict) -> list[dict]:
+    def read_all_by_expiry_date(self, parameter: dict) -> list[dict]:
         # print(f"Using Parameter: {parameter}")
         try:
             return list(self._collection.find(generate_filter_expiry_date(parameter)))
@@ -127,7 +133,7 @@ class LocaleDAO:
             return {}
 
     def close(self):
-        self._myclient.close
+        self._client.close
 
 
 def update_data(parameter: dict) -> None:
@@ -220,10 +226,10 @@ def get_max_pain_history(parameter: dict) -> list:
     locale_dao = LocaleDAO()
 
     parameter["type"] = "Call"
-    calls = list(locale_dao.read_all_byexpiry_date(parameter))
+    calls = list(locale_dao.read_all_by_expiry_date(parameter))
 
     parameter["type"] = "Put"
-    puts = list(locale_dao.read_all_byexpiry_date(parameter))
+    puts = list(locale_dao.read_all_by_expiry_date(parameter))
 
     # using a set as we want unique strike values
     strikes = set()
@@ -307,10 +313,10 @@ def get_most_recent_distribution(parameter: dict) -> None:
     locale_dao = LocaleDAO()
 
     parameter["type"] = "Call"
-    calls = list(locale_dao.read_all_byexpiry_date(parameter))
+    calls = list(locale_dao.read_all_by_expiry_date(parameter))
 
     parameter["type"] = "Put"
-    puts = list(locale_dao.read_all_byexpiry_date(parameter))
+    puts = list(locale_dao.read_all_by_expiry_date(parameter))
 
     # using a set as we want unique strike values
     strikes = set()
